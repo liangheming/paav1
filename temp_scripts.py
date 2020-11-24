@@ -12,7 +12,8 @@ if __name__ == '__main__':
                            max_thresh=640
                            )
     dataloader = DataLoader(dataset=dataset, batch_size=4, shuffle=True, num_workers=1, collate_fn=dataset.collect_fn)
-    net = RetinaNet(**{"dist_train": False}).eval()
+    net = RetinaNet(**{"dist_train": False})
     for img_input, targets, batch_len in dataloader:
         ret = net(img_input, targets={"target": targets, "batch_len": batch_len})
+        print(ret)
         break

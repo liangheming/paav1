@@ -262,8 +262,8 @@ class RetinaHead(nn.Module):
 default_cfg = {
     "num_cls": 80,
     "anchor_sizes": [32., 64., 128., 256., 512.],
-    "anchor_scales": [2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)],
-    "anchor_ratios": [0.5, 1., 2.],
+    "anchor_scales": [2 ** 0, ],
+    "anchor_ratios": [1., ],
     "strides": [8, 16, 32, 64, 128],
     "backbone": "resnet18",
     "pretrained": True,

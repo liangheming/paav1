@@ -93,6 +93,7 @@ class DDPMixSolver(object):
     def train(self, epoch):
         self.loss_logger.reset()
         self.cls_loss_logger.reset()
+        self.box_loss_logger.reset()
         self.iou_loss_logger.reset()
         self.match_num_logger.reset()
         self.model.train()
@@ -111,9 +112,10 @@ class DDPMixSolver(object):
                     out = self.model(img_tensor,
                                      targets={"target": targets_tensor, "batch_len": batch_len})
                     cls_loss = out['cls_loss']
+                    box_loss = out['box_loss']
                     iou_loss = out['iou_loss']
                     match_num = out['match_num']
-                    loss = cls_loss + iou_loss
+                    loss = cls_loss + box_loss + iou_loss
                     self.scaler.scale(loss).backward()
                     self.lr_adjuster(self.optimizer, i, epoch)
                     self.scaler.step(self.optimizer)
@@ -122,9 +124,10 @@ class DDPMixSolver(object):
                 out = self.model(img_tensor,
                                  targets={"target": targets_tensor, "batch_len": batch_len})
                 cls_loss = out['cls_loss']
+                box_loss = out['box_loss']
                 iou_loss = out['iou_loss']
                 match_num = out['match_num']
-                loss = cls_loss + iou_loss
+                loss = cls_loss + box_loss + iou_loss
                 loss.backward()
                 self.lr_adjuster(self.optimizer, i, epoch)
                 self.optimizer.step()
@@ -132,9 +135,11 @@ class DDPMixSolver(object):
             lr = self.optimizer.param_groups[0]['lr']
             self.loss_logger.update(loss.item())
             self.iou_loss_logger.update(iou_loss.item())
+            self.box_loss_logger.update(box_loss.item())
             self.cls_loss_logger.update(cls_loss.item())
             self.match_num_logger.update(match_num)
-            str_template = "epoch:{:2d}|match_num:{:0>4d}|size:{:3d}|loss:{:6.4f}|cls:{:6.4f}|iou:{:6.4f}|lr:{:8.6f}"
+            str_template = \
+                "epoch:{:2d}|match_num:{:0>4d}|size:{:3d}|loss:{:6.4f}|cls:{:6.4f}|box:{:6.4f}|iou:{:6.4f}|lr:{:8.6f}"
             if self.local_rank == 0:
                 pbar.set_description(str_template.format(
                     epoch,
@@ -142,21 +147,24 @@ class DDPMixSolver(object):
                     h,
                     self.loss_logger.avg(),
                     self.cls_loss_logger.avg(),
+                    self.box_loss_logger.avg(),
                     self.iou_loss_logger.avg(),
                     lr)
                 )
         self.ema.update_attr(self.model)
         loss_avg = reduce_sum(torch.tensor(self.loss_logger.avg(), device=self.device)) / self.gpu_num
         iou_loss_avg = reduce_sum(torch.tensor(self.iou_loss_logger.avg(), device=self.device)).item() / self.gpu_num
+        box_loss_avg = reduce_sum(torch.tensor(self.box_loss_logger.avg(), device=self.device)).item() / self.gpu_num
         cls_loss_avg = reduce_sum(torch.tensor(self.cls_loss_logger.avg(), device=self.device)).item() / self.gpu_num
         match_num_sum = reduce_sum(torch.tensor(self.match_num_logger.sum(), device=self.device)).item() / self.gpu_num
         if self.local_rank == 0:
-            final_template = "epoch:{:2d}|match_num:{:d}|loss:{:6.4f}|cls:{:6.4f}|iou:{:6.4f}"
+            final_template = "epoch:{:2d}|match_num:{:d}|loss:{:6.4f}|cls:{:6.4f}|box:{:6.4f}|iou:{:6.4f}"
             print(final_template.format(
                 epoch,
                 int(match_num_sum),
                 loss_avg,
                 cls_loss_avg,
+                box_loss_avg,
                 iou_loss_avg
             ))
 
