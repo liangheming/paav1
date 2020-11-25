@@ -1,7 +1,7 @@
 # RetinaNet
 This is an unofficial pytorch implementation of PAA object detection as described in [Probabilistic Anchor Assignment with IoU Prediction for Object Detection](https://arxiv.org/abs/2007.08103) by Kang Kim, Hee Seok Lee.
 
-## requirement
+## PAA
 ```text
 tqdm
 pyyaml
