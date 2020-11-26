@@ -194,7 +194,8 @@ class PAALoss(object):
             cls_loss = focal_loss(cls_predicts_item.sigmoid().clamp(min=1e-12, max=1 - 1e-12),
                                   torch.zeros_like(cls_predicts_item).scatter(dim=-1,
                                                                               index=cls_target[:, None],
-                                                                              value=1.0)).sum(-1)
+                                                                              value=1.0),
+                                  self.alpha, self.gamma).sum(-1)
             reg_loss = torch.full_like(cls_loss, fill_value=INF)
             reg_loss[match_idx >= 0] = self.iou_loss(predicts_box, gt_boxes[bid][:, 1:][match_idx[match_idx >= 0]])
             combine_loss = reg_loss + cls_loss
@@ -209,7 +210,7 @@ class PAALoss(object):
         match_cls_idx = torch.cat([gt_boxes[i][:, 0][j] for i, j in zip(match_batch_idx, match_gt_idx)]).long()
         num_pos = len(match_cls_idx)
         all_cls_target[cls_batch_idx, match_anchor_idx, match_cls_idx] = 1.0
-        all_cls_loss = focal_loss(cls_predicts.sigmoid(), all_cls_target).sum() / num_pos
+        all_cls_loss = focal_loss(cls_predicts.sigmoid(), all_cls_target, self.alpha, self.gamma).sum() / num_pos
 
         all_box_predicts = self.box_coder.decoder(reg_predicts[cls_batch_idx, match_anchor_idx],
                                                   all_anchors[match_anchor_idx])

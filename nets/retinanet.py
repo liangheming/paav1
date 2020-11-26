@@ -276,7 +276,7 @@ default_cfg = {
     "iou_thresh": 0.1,
     "iou_loss_weight": 0.5,
     "reg_loss_weight": 1.3,
-    "alpha": 0.5,
+    "alpha": 0.25,
     "gamma": 2.0,
     "allow_low_quality_matches": True,
     "iou_type": "giou",
